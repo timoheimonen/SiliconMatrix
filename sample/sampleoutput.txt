@@ -1,0 +1,145 @@
+main.cpp output:
+
+SiliconMatrix: High-Performance Matrix Operations
+================================================
+
+Matrix Multiplication Examples (3x3)
+==================================
+
+32-bit Integer Matrix Example:
+Matrix A:
+       7      -15      -64
+      75      -75       39
+     -63       92      -41
+
+Matrix B:
+      50      -50       15
+     -64      -12       43
+       0      100      -93
+
+Result Matrix C (A × B) - C++ implementation:
+    1310    -6570     5412
+    8550     1050    -5727
+   -9038    -2054     6824
+
+Result Matrix C (A × B) - ASM implementation:
+    1310    -6570     5412
+    8550     1050    -5727
+   -9038    -2054     6824
+
+Results match: Yes
+-----------------------------------
+
+64-bit Integer Matrix Example:
+Matrix A:
+     100       48       75
+     -78       95       81
+     -42      -97       -3
+
+Matrix B:
+     -45      -20      -47
+      78      -86      -55
+     -74      -35       83
+
+Result Matrix C (A × B) - C++ implementation:
+   -6306    -8753    -1115
+    4926    -9445     5164
+   -5454     9287     7060
+
+Result Matrix C (A × B) - ASM implementation:
+   -6306    -8753    -1115
+    4926    -9445     5164
+   -5454     9287     7060
+
+Results match: Yes
+-----------------------------------
+
+Floating-point Matrix Example:
+Matrix A:
+-0.931098  7.06862  2.00135
+-4.95434  1.73193 -0.296749
+-2.13039 -7.29191  4.82135
+
+Matrix B:
+-7.36213  9.01932  8.21983
+ 9.08772 -1.97794 -8.06036
+-2.75675 -9.65753  9.08447
+
+Result Matrix C (A × B) - C++ implementation:
+ 65.5752 -41.7073 -46.4479
+ 53.0318 -45.2446 -57.3796
+-63.8738 -51.3541  85.0634
+
+Result Matrix C (A × B) - ASM implementation:
+ 65.5752 -41.7073 -46.4479
+ 53.0318 -45.2446 -57.3796
+-63.8738 -51.3541  85.0634
+
+Results match: Yes
+-----------------------------------
+
+Performance Benchmarks
+=====================
+
+Matrix size: 200x200
+  32-bit Integer Matrix Multiplication:
+  C++ implementation: 3.92182 ms
+  ASM implementation: 2.3245 ms
+  Speedup: 1.68717x
+  Results match: Yes
+
+  64-bit Integer Matrix Multiplication:
+  C++ implementation: 2.46324 ms
+  ASM implementation: 4.10613 ms
+  Speedup: 0.599894x
+  Results match: Yes
+
+  Floating-point (double) Matrix Multiplication:
+  C++ implementation: 3.91436 ms
+  ASM implementation: 2.24687 ms
+  Speedup: 1.74214x
+  Results match: Yes
+
+--------------------------------------------
+
+Matrix size: 500x500
+  32-bit Integer Matrix Multiplication:
+  C++ implementation: 22.0851 ms
+  ASM implementation: 19.0153 ms
+  Speedup: 1.16144x
+  Results match: Yes
+
+  64-bit Integer Matrix Multiplication:
+  C++ implementation: 23.9438 ms
+  ASM implementation: 29.8002 ms
+  Speedup: 0.803478x
+  Results match: Yes
+
+  Floating-point (double) Matrix Multiplication:
+  C++ implementation: 79.4276 ms
+  ASM implementation: 44.6331 ms
+  Speedup: 1.77957x
+  Results match: Yes
+
+--------------------------------------------
+
+Matrix size: 1000x1000
+  32-bit Integer Matrix Multiplication:
+  C++ implementation: 228.536 ms
+  ASM implementation: 163.564 ms
+  Speedup: 1.39723x
+  Results match: Yes
+
+  64-bit Integer Matrix Multiplication:
+  C++ implementation: 461.985 ms
+  ASM implementation: 252.879 ms
+  Speedup: 1.82691x
+  Results match: Yes
+
+  Floating-point (double) Matrix Multiplication:
+  C++ implementation: 712.678 ms
+  ASM implementation: 385.35 ms
+  Speedup: 1.84943x
+  Results match: Yes
+
+--------------------------------------------

@@ -30,7 +30,7 @@
 #include <vector>
 #include <cstdint>
 #include <iomanip>
-#include "matrix_ops.h"
+#include "src/matrix_ops.h"
 #include <random>
 #include <chrono> 
 

@@ -21,9 +21,9 @@ ASFLAGS = $(ARCH_FLAGS)
 # Linker flags
 LDFLAGS = 
 
-# Source files
+# Source files now located in src folder
 CPP_SRC = main.cpp
-ASM_SRC = matrix_multiply_fp_asm.s matrix_multiply_int_asm.s matrix_multiply_int64_asm.s
+ASM_SRC = src/matrix_multiply_fp_asm.s src/matrix_multiply_int_asm.s src/matrix_multiply_int64_asm.s
 
 # Object files (derived from source files)
 CPP_OBJ = $(CPP_SRC:.cpp=.o)
