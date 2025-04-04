@@ -30,7 +30,7 @@ CPP_OBJ = $(CPP_SRC:.cpp=.o)
 ASM_OBJ = $(ASM_SRC:.s=.o)
 
 # Target executable name
-TARGET = SiliconMatrix
+TARGET = siliconmatrix
 
 # Default target: Build the executable with O2 optimization
 all: $(TARGET)

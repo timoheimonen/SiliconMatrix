@@ -75,39 +75,27 @@ _matrix_multiply_int_asm:
     // Loop counters: i, j, k for the three nested loops
     mov     x23, xzr               // i = 0 (row counter)
 
-/*
- * outer_loop_i:
- * This label marks the beginning of the outer loop for iterating over rows of matrix A.
- *
- * cmp x23, x22
- * - Compares the current row index (x23) with the total number of rows (N, stored in x22).
- *
- * b.ge end_outer_loop_i
- * - If the current row index (i) is greater than or equal to N, the loop ends by branching to end_outer_loop_i.
- *
- * mul x28, x23, x27
- * - Calculates the offset for the current row in matrix A by multiplying the row index (i) by the row stride (N * 4, stored in x27).
- * - The result is stored in x28 for faster access to the current row of matrix A.
- *
- * Prefetching:
- * add x10, x23, #1
- * - Calculates the next row index (i + 1) and stores it in x10.
- *
- * cmp x10, x22
- * - Compares the next row index (i + 1) with the total number of rows (N).
- *
- * b.ge skip_pf_a_row
- * - If the next row index (i + 1) is greater than or equal to N, skips the prefetching step by branching to skip_pf_a_row.
- *
- * mul x10, x10, x27
- * - Calculates the memory offset for the next row in matrix A by multiplying the next row index (i + 1) by the row stride (N * 4).
- *
- * add x10, x19, x10
- * - Adds the base address of matrix A (stored in x19) to the calculated offset to get the address of the next row.
- *
- * prfm pldl1keep, [x10]
- * - Prefetches the next row of matrix A into the L1 cache to optimize memory access for subsequent iterations.
- */
+// outer_loop_i:
+// This label marks the beginning of the outer loop for iterating over rows of matrix A.
+// cmp x23, x22
+// - Compares the current row index (x23) with the total number of rows (N, stored in x22).
+// b.ge end_outer_loop_i
+// - If the current row index (i) is greater than or equal to N, the loop ends by branching to end_outer_loop_i.
+// mul x28, x23, x27
+// - Calculates the offset for the current row in matrix A by multiplying the row index (i) by the row stride (N * 4, stored in x27).
+// Prefetching:
+// add x10, x23, #1
+// - Calculates the next row index (i + 1) and stores it in x10.
+// cmp x10, x22
+// - Compares the next row index (i + 1) with the total number of rows (N).
+// b.ge skip_pf_a_row
+// - If the next row index (i + 1) is greater than or equal to N, skips the prefetching step.
+// mul x10, x10, x27
+// - Calculates the memory offset for the next row in matrix A by multiplying the next row index (i + 1) by the row stride.
+// add x10, x19, x10
+// - Adds the base address of matrix A (in x19) to the calculated offset.
+// prfm pldl1keep, [x10]
+// - Prefetches the next row of matrix A into the L1 cache.
 outer_loop_i:
     cmp     x23, x22
     b.ge    end_outer_loop_i       // if i >= N, end loop
@@ -123,50 +111,17 @@ outer_loop_i:
     add     x10, x19, x10
     prfm    pldl1keep, [x10]
 
-
-/**
- * skip_pf_a_row:
- * This label marks the beginning of a routine or section of code.
- * 
- * - `mov x24, xzr`: Initializes the column counter `j` to 0 by moving the value 
- *   of the zero register (`xzr`) into register `x24`. This is likely used to 
- *   iterate over columns in a matrix or similar data structure.
- */
+// skip_pf_a_row:
+// // Converted block comment – now all lines start with // 
+// mov x24, xzr               // j = 0 (column counter)
 skip_pf_a_row:
     mov     x24, xzr               // j = 0 (column counter)
 
-
 // inner_loop_j:
-// This label marks the beginning of the inner loop over the columns (j).
-// The loop iterates through the columns of the result matrix C.
-//
+// This label marks the beginning of the inner loop over the columns of the result matrix C.
 // cmp x24, x22
-// Compares the current column index (j) stored in x24 with the total number of columns (N) stored in x22.
-//
+// - Compares the current column index stored in x24 with N.
 // b.ge end_inner_loop_j
-// If j >= N, the loop ends and execution jumps to the end_inner_loop_j label.
-//
-// add x5, x21, x28
-// add x5, x5, x24, lsl #2
-// Calculates the memory address of the element C[i*N + j] in the result matrix.
-// - x21: Base address of matrix C.
-// - x28: Offset for the current row (i*N).
-// - x24: Current column index (j), scaled by 4 (size of int32).
-//
-// add x10, x24, #3
-// cmp x10, x22
-// b.ge standard_compute
-// Checks if there are at least 4 columns remaining from the current column index (j).
-// If not, jumps to the scalar computation path (standard_compute).
-//
-// movi v14.4s, #0
-// Initializes a SIMD vector register (v14) with zeros to accumulate results for 4 integers at once.
-//
-// mov x25, xzr
-// Initializes the depth counter (k) to 0. This counter is used for iterating over the depth dimension.
-//
-// .align 7
-// Aligns the following instructions to a 128-byte boundary for optimal cache performance on Apple Silicon.
 inner_loop_j:
     cmp     x24, x22
     b.ge    end_inner_loop_j       // if j >= N, end loop
@@ -187,23 +142,17 @@ inner_loop_j:
 
     .align  7                      // 128-byte alignment for Apple Silicon cache lines
 
-
-
 // simd4_loop_k:
 // This label marks the start of a loop that processes 4 iterations of the k-dimension
 // in a matrix multiplication operation using SIMD instructions.
-//
 // - The loop first checks if there are at least 4 remaining k iterations to process.
 //   If not, it branches to the `simd4_remainder_loop` to handle the remaining iterations.
-//
 // - If unrolling is possible:
 //   - It calculates the address of the current element in matrix A for the given i and k indices.
 //   - Loads the value of A[i][k] into register w0.
-//
 // - Prefetching:
 //   - Prefetches the next block of matrix A into the L1 cache to optimize memory access.
 //   - Skips prefetching if the remaining k iterations are less than 8.
-//
 // Registers used:
 // - x10: Temporary register for address and bounds checking.
 // - x6:  Holds the address of the current element in matrix A.
@@ -211,7 +160,6 @@ inner_loop_j:
 // - x22: Upper bound of k.
 // - x19: Base address of matrix A.
 // - x28: Offset for the i-th row of matrix A.
-//
 // Branches:
 // - `simd4_remainder_loop`: Handles the remaining k iterations when unrolling is not possible.
 // - `skip_pf_a1`: Skips prefetching if the remaining k iterations are insufficient.
@@ -234,14 +182,11 @@ simd4_loop_k:
     add     x10, x6, #32
     prfm    pldl1keep, [x10]
 
-
 // This section of the code performs the following operations:
-// 
 // 1. Calculates the memory address for an element in matrix B:
 //    - `mul x11, x25, x27`: Multiplies `k` (x25) by `N*4` (x27) to compute the offset for row `k`.
 //    - `add x8, x20, x11`: Adds the base address of matrix B (x20) to the row offset.
 //    - `add x8, x8, x24, lsl #2`: Adds the column offset (`j*4`, where `j` is in x24) to get the address of element `B[k][j]`.
-//
 // 2. Prefetches the next row of matrix B into the L1 cache:
 //    - `add x10, x25, #4`: Calculates `k + 4` to check the next row.
 //    - `cmp x10, x22`: Compares `k + 4` with the total number of rows (x22).
@@ -251,7 +196,6 @@ simd4_loop_k:
 //    - `add x12, x20, x12`: Adds the base address of matrix B to the row offset.
 //    - `add x12, x12, x24, lsl #2`: Adds the column offset (`j*4`) to get the address of element `B[k+4][j]`.
 //    - `prfm pldl1keep, [x12]`: Prefetches the calculated address into the L1 cache to optimize memory access.
-//
 // Note: The prefetching step is conditional and only executed if the next row index (`k + 4`) is within bounds.
 skip_pf_a1:
 
@@ -269,41 +213,33 @@ skip_pf_a1:
     add     x12, x12, x24, lsl #2
     prfm    pldl1keep, [x12]
 
-
-
-/**
- * This section of assembly code performs a portion of a matrix multiplication
- * operation using SIMD (Single Instruction, Multiple Data) instructions. It
- * computes the dot product of a row from matrix A and a column from matrix B,
- * accumulating the results into a vector register (v14).
- *
- * Key operations:
- * - Loads elements of matrix B into SIMD registers (v1.4s) for four consecutive
- *   columns at a time.
- * - Broadcasts a single element from matrix A (A[i][k]) into all lanes of a SIMD
- *   register (v0.4s).
- * - Performs Multiply-Accumulate (mla) operations to compute partial sums for
- *   the dot product.
- *
- * Loop structure:
- * - Iterates over four consecutive elements of matrix A (A[i][k], A[i][k+1],
- *   A[i][k+2], A[i][k+3]) and their corresponding rows in matrix B.
- * - Updates pointers to access the next elements of matrix A and matrix B.
- *
- * Registers used:
- * - x6: Pointer to the current element of matrix A.
- * - x8: Pointer to the current row of matrix B.
- * - x11: Offset for accessing rows of matrix B.
- * - x20, x24, x27: Stride values for navigating matrix B.
- * - v0.4s: SIMD register holding broadcasted elements of matrix A.
- * - v1.4s: SIMD register holding elements of matrix B.
- * - v14.4s: Accumulator register for the dot product.
- *
- * Notes:
- * - The code assumes matrices are stored in row-major order.
- * - The loop processes four columns of matrix B at a time.
- * - The final result of the dot product is accumulated in v14.4s.
- */
+// This section of assembly code performs a portion of a matrix multiplication
+// operation using SIMD (Single Instruction, Multiple Data) instructions. It
+// computes the dot product of a row from matrix A and a column from matrix B,
+// accumulating the results into a vector register (v14).
+// Key operations:
+// - Loads elements of matrix B into SIMD registers (v1.4s) for four consecutive
+//   columns at a time.
+// - Broadcasts a single element from matrix A (A[i][k]) into all lanes of a SIMD
+//   register (v0.4s).
+// - Performs Multiply-Accumulate (mla) operations to compute partial sums for
+//   the dot product.
+// Loop structure:
+// - Iterates over four consecutive elements of matrix A (A[i][k], A[i][k+1],
+//   A[i][k+2], A[i][k+3]) and their corresponding rows in matrix B.
+// - Updates pointers to access the next elements of matrix A and matrix B.
+// Registers used:
+// - x6: Pointer to the current element in matrix A.
+// - x8: Pointer to the current row of matrix B.
+// - x11: Offset for accessing rows of matrix B.
+// - x20, x24, x27: Stride values for navigating matrix B.
+// - v0.4s: SIMD register holding broadcasted elements of matrix A.
+// - v1.4s: SIMD register holding elements of matrix B.
+// - v14.4s: Accumulator register for the dot product.
+// Notes:
+// - The code assumes matrices are stored in row-major order.
+// - The loop processes four columns of matrix B at a time.
+// - The final result of the dot product is accumulated in v14.4s.
 skip_pf_b1:
 
     ld1     {v1.4s}, [x8]          // B[k][j,j+1,j+2,j+3]
@@ -349,25 +285,20 @@ skip_pf_b1:
     add     x25, x25, #4
     b       simd4_loop_k
 
-
-
-/**
- * simd4_remainder_loop:
- * This loop handles the remaining iterations of the matrix multiplication
- * for cases where the number of iterations (k) is not a multiple of 4.
- * 
- * - Compares the current iteration index (x25) with the total iterations (x22).
- * - If all iterations are processed, it branches to `end_simd4_loop_k`.
- * - For each remaining iteration:
- *   1. Computes the address of the current element A[i][k] in matrix A.
- *   2. Loads the value of A[i][k] into register w0.
- *   3. Computes the address of the current row of matrix B (B[k][j, j+1, j+2, j+3]).
- *   4. Loads the 4-element vector from matrix B into SIMD register v1.
- *   5. Broadcasts the scalar value A[i][k] into all lanes of SIMD register v0.
- *   6. Performs a fused multiply-add operation (mla) to accumulate the product
- *      of A[i][k] and B[k][j, j+1, j+2, j+3] into SIMD register v14.
- *   7. Increments the iteration index (x25) and loops back to process the next k.
- */
+// simd4_remainder_loop:
+// This loop handles the remaining iterations of the matrix multiplication
+// for cases where the number of iterations (k) is not a multiple of 4.
+// - Compares the current iteration index (x25) with the total iterations (x22).
+// - If all iterations are processed, it branches to `end_simd4_loop_k`.
+// - For each remaining iteration:
+//   1. Computes the address of the current element A[i][k] in matrix A.
+//   2. Loads the value of A[i][k] into register w0.
+//   3. Computes the address of the current row of matrix B (B[k][j, j+1, j+2, j+3]).
+//   4. Loads the 4-element vector from matrix B into SIMD register v1.
+//   5. Broadcasts the scalar value A[i][k] into all lanes of SIMD register v0.
+//   6. Performs a fused multiply-add operation (mla) to accumulate the product
+//      of A[i][k] and B[k][j, j+1, j+2, j+3] into SIMD register v14.
+//   7. Increments the iteration index (x25) and loops back to process the next k.
 simd4_remainder_loop:
     // Handle remaining k iterations
     cmp     x25, x22
@@ -401,6 +332,7 @@ end_simd4_loop_k:
     add     x24, x24, #4           // j += 4
     b       inner_loop_j
 
+// standard_compute:
 // This function, `standard_compute`, implements a scalar path for matrix multiplication,
 // processing a single column at a time. It initializes the sum accumulator (`w26`) to 0
 // and the loop counter (`x25`) to 0. The `.align 7` directive ensures 128-byte alignment
@@ -412,24 +344,18 @@ standard_compute:
 
     .align  7                      // 128-byte alignment for Apple Silicon cache lines
 
-
-/*
- * standard_loop:
- * This label marks the beginning of the standard loop for matrix multiplication.
- * 
- * - Adds 3 to the value in x25 and stores the result in x10.
- * - Compares x10 with x22 to determine if the loop should continue or branch to the remainder loop.
- * 
- * Unroll 4 k iterations:
- * - k=0:
- *   - Computes the address for the current element in matrix A by adding x19, x28, and x25 shifted left by 2.
- *   - Stores the result in x6.
- * 
- * Prefetch A:
- * - Checks if prefetching is necessary by adding 8 to x25 and comparing the result with x22.
- * - If the condition is met, skips the prefetch operation.
- * - Otherwise, computes the address for prefetching by adding 32 to x6 and issues a prefetch instruction (prfm) to load data into L1 cache.
- */
+// standard_loop:
+// This label marks the beginning of the standard loop for matrix multiplication.
+// - Adds 3 to the value in x25 and stores the result in x10.
+// - Compares x10 with x22 to determine if the loop should continue or branch to the remainder loop.
+// Unroll 4 k iterations:
+// - k=0:
+//   - Computes the address for the current element in matrix A by adding x19, x28, and x25 shifted left by 2.
+//   - Stores the result in x6.
+// Prefetch A:
+// - Checks if prefetching is necessary by adding 8 to x25 and comparing the result with x22.
+// - If the condition is met, skips the prefetch operation.
+// - Otherwise, computes the address for prefetching by adding 32 to x6 and issues a prefetch instruction (prfm) to load data into L1 cache.
 standard_loop:
     add     x10, x25, #3
     cmp     x10, x22
@@ -447,37 +373,30 @@ standard_loop:
     add     x10, x6, #32
     prfm    pldl1keep, [x10]
 
-    
-/**
- * This assembly code performs a partial matrix multiplication for a 4x4 block
- * of matrices A and B, accumulating the result into a scalar sum.
- *
- * Registers:
- * - x6: Pointer to the current element in matrix A.
- * - x20: Base address of matrix B.
- * - x24: Column index (j) for matrix B.
- * - x25: Row index (i) for matrix A.
- * - x26: Accumulator for the sum of products.
- * - x27: Row stride for matrix B (N * 4, where N is the number of columns in B).
- * - x8: Temporary pointer for accessing elements in matrix B.
- * - x11: Temporary variable for calculating offsets in matrix B.
- * - w0: Temporary variable for loading elements from matrix A.
- * - w1: Temporary variable for loading elements from matrix B and storing intermediate products.
- *
- * The code processes four iterations (k = 0, 1, 2, 3) of the inner loop of
- * matrix multiplication, where:
- *   sum += A[i][k] * B[k][j]
- *
- * For each iteration:
- * 1. Load the current element of A (A[i][k]) into w0.
- * 2. Compute the address of the corresponding element in B (B[k][j]) using
- *    the base address, row stride, and column index, and load it into w1.
- * 3. Multiply A[i][k] and B[k][j], and accumulate the result into w26.
- * 4. Update pointers and offsets for the next iteration.
- *
- * After processing the 4x4 block, the row index (x25) is incremented, and
- * control is transferred back to the main loop (standard_loop).
- */
+// This assembly code performs a partial matrix multiplication for a 4x4 block
+// of matrices A and B, accumulating the result into a scalar sum.
+// Registers:
+// - x6: Pointer to the current element in matrix A.
+// - x20: Base address of matrix B.
+// - x24: Column index (j) for matrix B.
+// - x25: Row index (i) for matrix A.
+// - x26: Accumulator for the sum of products.
+// - x27: Row stride for matrix B (N * 4, where N is the number of columns in B).
+// - x8: Temporary pointer for accessing elements in matrix B.
+// - x11: Temporary variable for calculating offsets in matrix B.
+// - w0: Temporary variable for loading elements from matrix A.
+// - w1: Temporary variable for loading elements from matrix B and storing intermediate products.
+// The code processes four iterations (k = 0, 1, 2, 3) of the inner loop of
+// matrix multiplication, where:
+//   sum += A[i][k] * B[k][j]
+// For each iteration:
+// 1. Load the current element of A (A[i][k]) into w0.
+// 2. Compute the address of the corresponding element in B (B[k][j]) using
+//    the base address, row stride, and column index, and load it into w1.
+// 3. Multiply A[i][k] and B[k][j], and accumulate the result into w26.
+// 4. Update pointers and offsets for the next iteration.
+// After processing the 4x4 block, the row index (x25) is incremented, and
+// control is transferred back to the main loop (standard_loop).
 skip_pf_a2:
 
     ldr     w0, [x6]               // A[i][k]
@@ -529,10 +448,10 @@ skip_pf_a2:
     add     x25, x25, #4
     b       standard_loop
 
+// standard_remainder_loop:
 // This assembly code implements a loop to handle the remaining iterations
 // of a matrix multiplication operation for the case where the number of
 // iterations (k) is not evenly divisible by the vectorized loop size.
-//
 // standard_remainder_loop:
 // - Compares the current iteration index (x25) with the total number of
 //   iterations (x22). If x25 >= x22, the loop ends and branches to
@@ -588,7 +507,6 @@ end_inner_loop_j:
     b       outer_loop_i
 
 // This section of the code restores the callee-saved registers and returns from the function.
-// 
 // - The stack pointer (sp) is restored to the value stored in x29.
 // - The callee-saved registers (x19 to x30) are restored from the stack in reverse order of their storage.
 // - Each `ldp` instruction loads two registers from the stack and increments the stack pointer by 16 bytes.
